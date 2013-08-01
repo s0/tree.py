@@ -5,6 +5,17 @@ tree.py
 
 **tree.py** operates in a very different way to the traditional **tree** command, it instead takes input from stdin (so you can pipe it data) and will try and parse it and present it in an intuitive tree-like format.
 
+
+* [Usage](#usage)
+  * [Basic Usage](#basic-usage)
+  * [Usage with **find**](#usage-with-find-or-another-tool-with-similar-output)
+  * [Usage with **grep**](#usage-with-grep)
+* [Future Plans](#future-plans)
+* [Advanced Usage](#advanced-usage)
+  * [Notes](#notes)
+* [Copyright](#copyright)
+
+
 ## Usage
 
 ### Setup
@@ -107,7 +118,16 @@ Resulting In:
     ├── [1] DISCLAIMER
     └── [18] tree.py
 
-6 directories, 14 files
+    6 directories, 14 files
+
+
+## Future Plans
+
+
+* Implement tree for non-stdin usage (i.e. without needing `-i`)
+* More input file formats
+* Ability to display information on files such as file permissions, size, user, group, timestamps etc...
+
 
 ## Advanced Usage
 
@@ -135,9 +155,9 @@ Resulting In:
                                 - none:           don't
                                 - always:         do
                                 
-### Note
+### Notes
 
-**tree.py** *loosely* uses the environment variables `LS_COLORS` and `TREE_COLORS` to decide how to color the output.
+**tree.py** *loosely* uses the environment variables `LS_COLORS` and `TREE_COLORS` to decide how to color the output. `TREE_COLORS` is given a higher priority, overriding each individual 'match' in LS_COLORS. You can also define `count` and `bin` to set colours for when you pipe grep input into tree to colour the matches.
 
 
 ## Copyright
