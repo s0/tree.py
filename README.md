@@ -109,6 +109,35 @@ Resulting In:
 
 6 directories, 14 files
 
+## Advanced Usage
+
+    > tree.py [-h] [-i [none|normal|grep|g|n] ] [-c none|always]
+          
+    -h, --help                 show the help message
+    
+    -i, --mode, --input-mode   The input type. If ommitted, the default type is
+                               "none", and the directory tree is walked, if -i is
+                               given with no argument, then "normal" is used
+                               
+                               Values:
+                                - none:           (default when -i is not included in the command)
+                                
+                                - normal (or n):  (default when -i is included, but no value given)
+                                                  Accept input which is one filename per line
+                                                  
+                                - grep (or g):    Accept input that is like grep multi-file output
+                                                  (i.e. file: match for each line, with single files
+                                                  possibly appearing multiple times)
+                        
+    -c, --color, --colour      Use color in the tree.
+    
+                               Values:
+                                - none:           don't
+                                - always:         do
+                                
+### Note
+
+**tree.py** *loosely* uses the environment variables `LS_COLORS` and `TREE_COLORS` to decide how to color the output.
 
 
 ## Copyright
