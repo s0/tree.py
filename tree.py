@@ -361,10 +361,10 @@ def main():
 
     t.print_tree()
 
-    print ("\n{} directorie{}, {} file{}".format(t.dir_count,
-                                                 "s"[t.dir_count==1:],
-                                                 t.file_count,
-                                                 "s"[t.file_count==1:]))
+    print ("\n{} director{}, {} file{}".format(t.dir_count,
+                                               "y" if t.dir_count == 1 else "ies",
+                                               t.file_count,
+                                               "s"[t.file_count==1:]))
 
 if __name__ == "__main__":
     main()
