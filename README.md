@@ -20,7 +20,7 @@ tree.py
 
 ### Setup
 
-You can put the file tree.py wherever you like, and set an alias in your `.bashrc` file if you use **bash**, or you can just copy it to your `/usr/bin/` directory:
+You can put the file tree.py wherever you like, and set an alias in your `.bashrc` file if you use **bash**, or you can just copy it to your `/usr/bin/` directory: ***Note: this script is written in python3 not python2, so make sure it's being run by the correct executable! (check the shebang)***
 
     > sudo cp tree.py /usr/bin/
 
