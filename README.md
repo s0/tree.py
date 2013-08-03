@@ -20,7 +20,7 @@ tree.py
 
 ### Setup
 
-You can put the file tree.py wherever you like, and set an alias in your `.bashrc` file if you use **bash**, or you can just copy it to your `/usr/bin/` directory: ***Note: this script is written in python3 not python2, so make sure it's being run by the correct executable! (check the shebang)***
+You can put the file tree.py wherever you like, and set an alias in your `.bashrc` file if you use **bash**, or you can just copy it to your `/usr/bin/` directory:
 
     > sudo cp tree.py /usr/bin/
 
@@ -131,30 +131,47 @@ Resulting In:
 
 ## Advanced Usage
 
-    > tree.py [-h] [-i [none|normal|grep|g|n] ] [-c none|always]
-          
-    -h, --help                 show the help message
+    > tree -h
+
+    Usage: tree.py [-h]  [-i [none|normal|grep|g|n]] [options ...]
     
+    A small utility that displays input from stdin in a tree-like structure    
+                                                                               
+    -h, --help                 show the help message                           
+                                                                               
     -i, --mode, --input-mode   The input type. If ommitted, the default type is
-                               "none", and the directory tree is walked, if -i is
-                               given with no argument, then "normal" is used
-                               
-                               Values:
-                                - none:           (default when -i is not included in the command)
-                                
-                                - normal (or n):  (default when -i is included, but no value given)
-                                                  Accept input which is one filename per line
-                                                  
-                                - grep (or g):    Accept input that is like grep multi-file output
-                                                  (i.e. file: match for each line, with single files
-                                                  possibly appearing multiple times)
-                        
-    -c, --color, --colour      Use color in the tree.
-    
-                               Values:
-                                - none:           don't
-                                - always:         do
-                                
+                               "none", and the directory tree walked, if -i is 
+                               given with no argument, then "normal" is used.  
+                                                                               
+                               Values:                                         
+                                - none:   (default when -i is not included in  
+                                          the command)                         
+                                                                               
+                                - normal: [or n] (default when -i is included  
+                                          but no value given)                  
+                                          Accept input which is one filename   
+                                          per line                             
+                                                                               
+                                - grep:   [or g] Accept input that is like grep
+                                          multi-file output (i.e. "file: match"
+                                          for each line, with single files     
+                                          possibly appearing multiple times)   
+                                                                               
+    -c, --color, --colour      Use color in the tree.                          
+                                                                               
+                               Values:                                         
+                                - none:   don't                                
+                                - always: do (default)                         
+                                                                               
+    -e, --encoding             Which characters should be used to draw the tree
+                                                                               
+                               Values:                                         
+                                - auto:   try and detect which would be best   
+                                          (default)                            
+                                - utf-8                                        
+                                - ascii 
+
+
 ### Notes
 
 **tree.py** *loosely* uses the environment variables `LS_COLORS` and `TREE_COLORS` to decide how to color the output. `TREE_COLORS` is given a higher priority, overriding each individual 'match' in LS_COLORS. You can also define `count` and `bin` to set colours for when you pipe grep input into tree to colour the matches.

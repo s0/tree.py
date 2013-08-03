@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """
 Tree.py: Tree is a small utility that displays input from stdin in a tree-like
@@ -72,12 +72,17 @@ class Chars:
     # Newline Character
     Nln = chr(10)
 
-# The strings to concatenate together to form the tree structure
-class Segs:
-    Vertical = Chars.Vrt + "   "
-    Tee = Chars.Tee + Chars.Hrz + Chars.Hrz + " "
-    Bottom = Chars.Crn + Chars.Hrz + Chars.Hrz + " "
-    Blank = "    "
+class SafeChars:
+    # Vertical Line
+    Vrt = "|"
+    # Tee
+    Tee = "|"
+    # Horizontal Line
+    Hrz = "-"
+    # Bottom Corner
+    Crn = "`"
+    # Newline Character
+    Nln = chr(10)
 
 
 class Node(object):
@@ -98,16 +103,24 @@ class Tree(object):
 
     """
 
-    def __init__(self, args):
+    def __init__(self, mode, use_color, chars):
 
-        self.args = args
-        
-        self.color = args.color == ColorMode.Always
+        self.mode = mode
+        self.color = use_color
 
         self.root = Node()
 
         self.dir_count = 0
         self.file_count = 0
+
+        # The strings to concatenate together to form the tree structure
+        class Segs:
+            Vertical = chars.Vrt + "   "
+            Tee = chars.Tee + chars.Hrz + chars.Hrz + " "
+            Bottom = chars.Crn + chars.Hrz + chars.Hrz + " "
+            Blank = "    "
+
+        self.segs = Segs
 
     def add_line(self, line):
 
@@ -120,10 +133,10 @@ class Tree(object):
         path = None
         info = {}
 
-        if self.args.mode == ParsingMode.Normal:
+        if self.mode == ParsingMode.Normal:
             path = line
-            
-        elif self.args.mode == ParsingMode.Grep:
+
+        elif self.mode == ParsingMode.Grep:
 
             if line.startswith("Binary file ") and line.endswith(" matches"):
                 path = line[12:][:-8]
@@ -138,7 +151,7 @@ class Tree(object):
                 else:
                     path = f
 
-        
+
 
         if path is not None:
             node = self.root
@@ -149,13 +162,13 @@ class Tree(object):
                     node.children[seg] = Node(seg)
 
                 node = node.children[seg]
-        
+
             node.info = info
             node.count += 1
 
 
-    def print_tree(self, node=None, prefix=[], prefix_string='',
-                   parent_path=''):
+    def gen_lines(self, node=None, prefix=[], prefix_string='',
+                  parent_path=''):
 
         """
         Print the tree as required (recursively)
@@ -165,7 +178,6 @@ class Tree(object):
         if node is None:
             node = self.root
 
-
         # Only true if not the "top level" empty node
         increase_prefix = False
         path = parent_path
@@ -173,37 +185,32 @@ class Tree(object):
         if node.label is not None:
             path = os.path.join(path, node.label)
 
-            sys.stdout.write(prefix_string)
+            line = prefix_string
 
             # Get properties about this file / directory
-           
+
             if len(node.children) > 0 or os.path.isdir(path):
                 self.dir_count += 1
 
-                sys.stdout.write(color(node.label, color_main['di'],
-                                       self.color))
-                    
+                line += color(node.label, color_main['di'], self.color)
+
             else:
                 self.file_count += 1
 
-                if self.args.mode == ParsingMode.Grep:
+                if self.mode == ParsingMode.Grep:
                     # Show count
                     if 'binary' in node.info and node.info['binary']:
-                        sys.stdout.write('[{}] '
-                                         .format(color('BIN',
-                                                       color_main['bin'],
-                                                       self.color)))
+                        line += '[{}] '.format(color('BIN', color_main['bin'],
+                                                     self.color))
                     else:
-                        sys.stdout.write('[{}] '
-                                         .format(color(node.count,
-                                                       color_main['count'],
-                                                       self.color)))
+                        line += '[{}] '.format(color(node.count,
+                                                     color_main['count'],
+                                                     self.color))
 
                 (f, ext) = os.path.splitext(path)
-                sys.stdout.write(color(node.label, color_ext[ext],
-                                       self.color))
+                line += color(node.label, color_ext[ext], self.color)
 
-            sys.stdout.write(Chars.Nln)
+            yield line
 
             increase_prefix = True
 
@@ -219,24 +226,24 @@ class Tree(object):
                 child_prefix = ''
                 for i in prefix:
                     if i:
-                        child_prefix += Segs.Vertical
+                        child_prefix += self.segs.Vertical
                     else:
-                        child_prefix += Segs.Blank
+                        child_prefix += self.segs.Blank
 
                 child_prefix_mid = child_prefix_mid + [1]
                 child_prefix_bot = child_prefix_bot + [0]
-                child_prefix_string_mid = child_prefix + Segs.Tee
-                child_prefix_string_bot = child_prefix + Segs.Bottom
+                child_prefix_string_mid = child_prefix + self.segs.Tee
+                child_prefix_string_bot = child_prefix + self.segs.Bottom
 
             j = 0
             last = len(node.children) - 1
             for i, child in sorted(node.children.items()):
                 if j == last:
-                    self.print_tree(child, child_prefix_bot,
-                                    child_prefix_string_bot, path)
+                    yield from self.gen_lines(child, child_prefix_bot,
+                                              child_prefix_string_bot, path)
                 else:
-                    self.print_tree(child, child_prefix_mid,
-                                    child_prefix_string_mid, path)
+                    yield from self.gen_lines(child, child_prefix_mid,
+                                              child_prefix_string_mid, path)
                 j += 1
 
 
@@ -301,40 +308,46 @@ def color(string, color, do_color):
     else:
         return string
 
+
 def main():
 
     """
     Run when the program is being used standalone, uses stdin as the input
     """
 
-    parser = argparse.ArgumentParser(description='Tree is a small utility '
-                                     'that displays input from stdin in a '
-                                     'tree-like structure')
+    parser = TreeArgumentParser()
 
     parser.add_argument('-i', '--mode', '--input-mode',
                         choices=map_mode,
                         default='none',
                         nargs='?',
                         const='normal',
-                        help='The input type. If ommitted, the default type '
-                        'is "none", and the directory tree is walked, if -i '
-                        'is given with no argument, then "normal" is used'
                     )
 
     parser.add_argument('-c', '--color', '--colour',
                         choices=map_color,
                         default='always',
-                        help='Use color or not, default: "always"'
+                    )
+
+    parser.add_argument('-e', '--encoding',
+                        choices=['auto', 'utf-8', 'ascii'],
+                        default='auto',
                     )
 
     args = parser.parse_args()
 
-    # Convert strings to correct integer
-    args.mode = map_mode[args.mode]
-    args.color = map_color[args.color]
+    # Character set to use
+    chars = SafeChars
+
+    if (args.encoding == 'utf-8' or 
+        args.encoding == 'auto' and sys.stdout.encoding == 'UTF-8'):
+        # Switch to UTF-8 Chars
+        chars = Chars
 
     # Create Tree
-    t = Tree(args)
+    t = Tree(map_mode[args.mode],
+             map_color[args.color] == ColorMode.Always,
+             chars)
 
     # Setup colour dicts using environment variables
     setup_color(args)
@@ -342,8 +355,9 @@ def main():
     # If the mode is ParsingMode.NoInput, we walk the directory structure
     # instead
     if args.mode == ParsingMode.NoInput:
-        print("Walking the directory tree is not currently supported, please "
-              "use -i and pipe in input from find")
+        parser.print_usage()
+        print("\nWalking the directory tree is not currently supported, please"
+              " use -i and pipe in input from find: find . | tree -i")
         exit(1)
 
     else:
@@ -359,12 +373,68 @@ def main():
             exit(1)
 
 
-    t.print_tree()
+    for line in t.gen_lines():
+        print(line)
 
-    print ("\n{} director{}, {} file{}".format(t.dir_count,
-                                               "y" if t.dir_count == 1 else "ies",
-                                               t.file_count,
-                                               "s"[t.file_count==1:]))
+    print ("\n{} director{}, {} file{}"
+           .format(t.dir_count, "y" if t.dir_count == 1 else "ies",
+                   t.file_count, "s"[t.file_count==1:]))
+
+
+class TreeArgumentParser(argparse.ArgumentParser):
+
+    """
+    ArgumentParser to print customized help messages
+
+    """
+
+    def format_usage(self):
+        return ('Usage: {} [-h]  [-i [none|normal|grep|g|n]] [options ...]'
+                '\n'.format(os.path.basename(sys.argv[0])))
+
+    def format_help(self):
+
+        return (
+            self.format_usage() + '\n'
+
+            'A small utility that displays input from stdin in a tree-like structure    \n'
+            '                                                                           \n'
+            '-h, --help                 show the help message                           \n'
+            '                                                                           \n'
+            '-i, --mode, --input-mode   The input type. If ommitted, the default type is\n'
+            '                           "none", and the directory tree walked, if -i is \n'
+            '                           given with no argument, then "normal" is used.  \n'
+            '                                                                           \n'
+            '                           Values:                                         \n'
+            '                            - none:   (default when -i is not included in  \n'
+            '                                      the command)                         \n'
+            '                                                                           \n'
+            '                            - normal: [or n] (default when -i is included  \n'
+            '                                      but no value given)                  \n'
+            '                                      Accept input which is one filename   \n'
+            '                                      per line                             \n'
+            '                                                                           \n'
+            '                            - grep:   [or g] Accept input that is like grep\n'
+            '                                      multi-file output (i.e. "file: match"\n'
+            '                                      for each line, with single files     \n'
+            '                                      possibly appearing multiple times)   \n'
+            '                                                                           \n'
+            '-c, --color, --colour      Use color in the tree.                          \n'
+            '                                                                           \n'
+            '                           Values:                                         \n'
+            '                            - none:   don\'t                               \n'
+            '                            - always: do (default)                         \n'
+            '                                                                           \n'
+            '-e, --encoding             Which characters should be used to draw the tree\n'
+            '                                                                           \n'
+            '                           Values:                                         \n'
+            '                            - auto:   try and detect which would be best   \n'
+            '                                      (default)                            \n'
+            '                            - utf-8                                        \n'
+            '                            - ascii                                        \n'
+            '                                                                           \n'
+        )
+
 
 if __name__ == "__main__":
     main()
