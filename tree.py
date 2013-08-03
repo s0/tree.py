@@ -29,10 +29,11 @@ import sys
 
 # The different modes of parsing that tree.py can handle
 class ParsingMode:
-    NoInput, Normal, Grep = range(3)
+    Auto, NoInput, Normal, Grep = range(4)
 
 # Map from command-line flags to actual values in ParsingMode
 map_mode = {
+    'auto': ParsingMode.Auto,
     'none': ParsingMode.NoInput,
     'normal': ParsingMode.Normal,
     'n': ParsingMode.Normal,
@@ -40,17 +41,6 @@ map_mode = {
     'g': ParsingMode.Grep
 }
 
-
-## Colors
-
-# Will color be used or not?
-class ColorMode:
-    NoColor, Always = range(2)
-
-map_color = {
-    'none': ColorMode.NoColor,
-    'always': ColorMode.Always
-}
 
 # Mappings to color codes for particular types of files / file extensions
 color_main = collections.defaultdict(lambda: '0')
@@ -271,9 +261,6 @@ def setup_color(args):
     Using environment variables, setup the dictionaries of colour lookups
     """
 
-    if args.color == ColorMode.NoColor:
-        return
-
     def parse_environment_variable(var):
         if var in os.environ:
             for entry in os.environ[var].split(':'):
@@ -319,14 +306,14 @@ def main():
 
     parser.add_argument('-i', '--mode', '--input-mode',
                         choices=map_mode,
-                        default='none',
+                        default='auto',
                         nargs='?',
                         const='normal',
                     )
 
     parser.add_argument('-c', '--color', '--colour',
-                        choices=map_color,
-                        default='always',
+                        choices=['auto', 'always', 'none'],
+                        default='auto',
                     )
 
     parser.add_argument('-e', '--encoding',
@@ -339,18 +326,30 @@ def main():
     # Character set to use
     chars = SafeChars
 
-    if (args.encoding == 'utf-8' or 
+    if (args.encoding == 'utf-8' or
         args.encoding == 'auto' and sys.stdout.encoding == 'UTF-8'):
         # Switch to UTF-8 Chars
         chars = Chars
 
+    # Are we using ANSI Escape Codes for Color?
+    use_color = (args.color == 'always' or
+                 args.color == 'auto' and hasattr(sys.stdout, "isatty") and sys.stdout.isatty())
+
+    # Work out parsing mode (auto detect tty)
+    args.mode = map_mode[args.mode]
+
+    if args.mode == ParsingMode.Auto:
+        if hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
+            args.mode = ParsingMode.NoInput
+        else:
+            args.mode = ParsingMode.Normal
+
     # Create Tree
-    t = Tree(map_mode[args.mode],
-             map_color[args.color] == ColorMode.Always,
-             chars)
+    t = Tree(args.mode, use_color, chars)
 
     # Setup colour dicts using environment variables
-    setup_color(args)
+    if use_color:
+        setup_color(args)
 
     # If the mode is ParsingMode.NoInput, we walk the directory structure
     # instead
@@ -401,13 +400,20 @@ class TreeArgumentParser(argparse.ArgumentParser):
             '                                                                           \n'
             '-h, --help                 show the help message                           \n'
             '                                                                           \n'
-            '-i, --mode, --input-mode   The input type. If ommitted, the default type is\n'
-            '                           "none", and the directory tree walked, if -i is \n'
-            '                           given with no argument, then "normal" is used.  \n'
+            '-i, --mode, --input-mode   The input type. If ommitted, the default is     \n'
+            '                           "auto", if -i is given with no argument, then   \n'
+            '                           "normal" is used.                               \n'
             '                                                                           \n'
             '                           Values:                                         \n'
-            '                            - none:   (default when -i is not included in  \n'
+            '                            - auto:   (default when -i is not included in  \n'
             '                                      the command)                         \n'
+            '                                      automatically try and detect whether \n'
+            '                                      data is being piped to tree, and if  \n'
+            '                                      so, use "normal" mode, otherwise use \n'
+            '                                      "none" (checks is stdin is a tty)    \n'
+            '                                                                           \n'
+            '                            - none:   don\'t read from stdin, display a    \n'
+            '                                      target directory instead!            \n'
             '                                                                           \n'
             '                            - normal: [or n] (default when -i is included  \n'
             '                                      but no value given)                  \n'
@@ -422,8 +428,9 @@ class TreeArgumentParser(argparse.ArgumentParser):
             '-c, --color, --colour      Use color in the tree.                          \n'
             '                                                                           \n'
             '                           Values:                                         \n'
-            '                            - none:   don\'t                               \n'
-            '                            - always: do (default)                         \n'
+            '                            - auto:   try and automatically detect         \n'
+            '                            - always                                       \n'
+            '                            - none                                         \n'
             '                                                                           \n'
             '-e, --encoding             Which characters should be used to draw the tree\n'
             '                                                                           \n'

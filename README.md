@@ -36,9 +36,9 @@ For Example:
     
 ### Usage with find *(or another tool with similar output)*
 
-When you want to pipe data from another process into tree.py, you need to use the `--input-mode` or `-i` command-line flag.
+Tree automatically detects when data is being piped to it instead of standalone usage:
 
-    > find . | tree -i
+    > find . | tree
     
 Example Output:
 
@@ -63,7 +63,11 @@ You would get this result:
     ./.git/refs/heads
     ./.git/refs/heads/master
 
-And piped into tree.py, it display like so:
+And piped into tree.py...
+
+    > find . | grep head | tree
+
+... it display like so:
 
     .
     └── .git
@@ -139,13 +143,20 @@ Resulting In:
                                                                                
     -h, --help                 show the help message                           
                                                                                
-    -i, --mode, --input-mode   The input type. If ommitted, the default type is
-                               "none", and the directory tree walked, if -i is 
-                               given with no argument, then "normal" is used.  
+    -i, --mode, --input-mode   The input type. If ommitted, the default is     
+                               "auto", if -i is given with no argument, then
+                               "normal" is used.  
                                                                                
                                Values:                                         
-                                - none:   (default when -i is not included in  
+                                - auto:   (default when -i is not included in  
                                           the command)                         
+                                          automatically try and detect whether 
+                                          data is being piped to tree, and if  
+                                          so, use "normal" mode, otherwise use 
+                                          "none" (checks is stdin is a tty)    
+                                                                               
+                                - none:   don't read from stdin, display a    
+                                          target directory instead!        
                                                                                
                                 - normal: [or n] (default when -i is included  
                                           but no value given)                  
@@ -159,9 +170,10 @@ Resulting In:
                                                                                
     -c, --color, --colour      Use color in the tree.                          
                                                                                
-                               Values:                                         
-                                - none:   don't                                
-                                - always: do (default)                         
+                               Values:                                                         
+                                - auto:   try and automatically detect         
+                                - always                                       
+                                - none                         
                                                                                
     -e, --encoding             Which characters should be used to draw the tree
                                                                                
