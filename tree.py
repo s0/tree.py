@@ -372,12 +372,16 @@ def main():
                     full = os.path.join(target, child)
                     t.add_line(full)
                     if os.path.isdir(full):
-                        recursive_add(full)
+                        try:
+                            recursive_add(full)
+                        except OSError as e:
+                            print("Error Reading Target: {}".format(e),
+                                  file=sys.stderr)
 
         try:
             recursive_add(args.target)
-        except FileNotFoundError as e:
-            print("Error Walking Target: {}".format(e))
+        except OSError as e:
+            print("Error Reading Target: {}".format(e))
             exit(1)
 
     else:
