@@ -26,7 +26,7 @@ You can put the file tree.py wherever you like, and set an alias in your `.bashr
 
 ### Basic Usage
 
-The traditional way to use tree.py *will be* with no commands (or with a path passed in) to display the whole directory tree of a target. ***Note: this feature is actually not implemented yet, use `find <path> | tree -i` for the moment.***
+The traditional way to use tree.py *will be* with no commands (or with a path passed in) to display the whole directory tree of a target. ***Note: this feature is actually not implemented yet, use `find <path> | tree` for the moment.***
 
     > tree [path]
 
