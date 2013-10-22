@@ -96,6 +96,11 @@ class Tree(object):
     def __init__(self, mode, use_color, chars):
 
         self.mode = mode
+
+        # Parse NoInput as "Normal" mode
+        if self.mode == ParsingMode.NoInput:
+            self.mode = ParsingMode.Normal
+
         self.color = use_color
 
         self.root = Node()
@@ -321,6 +326,10 @@ def main():
                         default='auto',
                     )
 
+    parser.add_argument('-a', action='store_true')
+
+    parser.add_argument('target', nargs='?', default='.')
+
     args = parser.parse_args()
 
     # Character set to use
@@ -355,9 +364,21 @@ def main():
     # instead
     if args.mode == ParsingMode.NoInput:
         parser.print_usage()
-        print("\nWalking the directory tree is not currently supported, please"
-              " use -i and pipe in input from find: find . | tree -i")
-        exit(1)
+
+        def recursive_add(target):
+            for child in sorted(os.listdir(target)):
+                # Only show hiddent files if required
+                if args.a or not child.startswith('.'):
+                    full = os.path.join(target, child)
+                    t.add_line(full)
+                    if os.path.isdir(full):
+                        recursive_add(full)
+
+        try:
+            recursive_add(args.target)
+        except FileNotFoundError as e:
+            print("Error Walking Target: {}".format(e))
+            exit(1)
 
     else:
         try:
@@ -388,7 +409,7 @@ class TreeArgumentParser(argparse.ArgumentParser):
     """
 
     def format_usage(self):
-        return ('Usage: {} [-h]  [-i [none|normal|grep|g|n]] [options ...]'
+        return ('Usage: {} [-h]  [-i [none|normal|grep|g|n]] [other options ...] [target]'
                 '\n'.format(os.path.basename(sys.argv[0])))
 
     def format_help(self):
@@ -410,16 +431,13 @@ class TreeArgumentParser(argparse.ArgumentParser):
             '                                      automatically try and detect whether \n'
             '                                      data is being piped to tree, and if  \n'
             '                                      so, use "normal" mode, otherwise use \n'
-            '                                      "none" (checks is stdin is a tty)    \n'
-            '                                                                           \n'
+            '                                      "none" (checks if stdin is a tty)    \n'
             '                            - none:   don\'t read from stdin, display a    \n'
             '                                      target directory instead!            \n'
-            '                                                                           \n'
             '                            - normal: [or n] (default when -i is included  \n'
             '                                      but no value given)                  \n'
             '                                      Accept input which is one filename   \n'
             '                                      per line                             \n'
-            '                                                                           \n'
             '                            - grep:   [or g] Accept input that is like grep\n'
             '                                      multi-file output (i.e. "file: match"\n'
             '                                      for each line, with single files     \n'
@@ -431,6 +449,8 @@ class TreeArgumentParser(argparse.ArgumentParser):
             '                            - auto:   try and automatically detect         \n'
             '                            - always                                       \n'
             '                            - none                                         \n'
+            '                                                                           \n'
+            '-a                         Include hidden files                            \n'
             '                                                                           \n'
             '-e, --encoding             Which characters should be used to draw the tree\n'
             '                                                                           \n'
