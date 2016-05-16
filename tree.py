@@ -125,6 +125,10 @@ class Tree(object):
 
         line = line.strip()
 
+        # strips trailing '/'
+        if line[-1] == '/':
+          line = line[0:-1]
+
         path = None
         info = {}
 
